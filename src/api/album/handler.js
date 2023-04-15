@@ -1,24 +1,21 @@
 const ClientError = require('../../exceptions/ClientError');
+const autoBind = require('auto-bind');
 
 class AlbumsHandler {
   constructor(service, validator) {
-    this._service = service;
-    this._validator = validator;
-    // Agar this nya merujuk pada instance dari NotesService bukan object route
-    this.postAlbumHandler = this.postAlbumHandler.bind(this);
-    this.getAlbumByIdHandler = this.getAlbumByIdHandler.bind(this);
-    this.putAlbumByIdHandler = this.putAlbumByIdHandler.bind(this);
-    this.deleteAlbumByIdHandler = this.deleteAlbumByIdHandler.bind(this);
+    this.service = service;
+    this.validator = validator;
+    autoBind(this);
   }
 
   async postAlbumHandler(request, h) {
     try {
-      this._validator.validateAlbumPayload(request.payload);
+      this.validator.validateAlbumPayload(request.payload);
       const {
         name, year
       } = request.payload;
 
-      const albumId = await this._service.addAlbum({
+      const albumId = await this.service.addAlbum({
         name, year
       });
 
@@ -55,7 +52,7 @@ class AlbumsHandler {
   async getAlbumByIdHandler(request, h) {
     try {
       const { id } = request.params;
-      const album = await this._service.getAlbumById(id);
+      const album = await this.service.getAlbumById(id);
 
       return {
         status: 'success',
@@ -85,9 +82,9 @@ class AlbumsHandler {
 
   async putAlbumByIdHandler(request, h) {
     try {
-      this._validator.validateAlbumPayload(request.payload);
+      this.validator.validateAlbumPayload(request.payload);
       const { id } = request.params;
-      await this._service.editAlbumById(id, request.payload);
+      await this.service.editAlbumById(id, request.payload);
       const respon = h.response({
         status: 'success',
         message: 'Album berhasil diperbarui',
@@ -117,7 +114,7 @@ class AlbumsHandler {
   async deleteAlbumByIdHandler(request, h) {
     try {
       const { id } = request.params;
-      await this._service.deleteAlbumById(id);
+      await this.service.deleteAlbumById(id);
       return {
         status: 'success',
         message: 'Album berhasil dihapus',
