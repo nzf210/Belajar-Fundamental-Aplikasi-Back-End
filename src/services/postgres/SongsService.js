@@ -17,7 +17,7 @@ class SongsService {
     const updatedAt = insertedAt;
     const query = {
       text: 'INSERT INTO songs VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id',
-      values: [id, title, year, genre, performer, duration, albumId, insertedAt, updatedAt],
+      values: [id, title, year, performer, genre, duration, insertedAt, updatedAt, albumId],
     };
     const result = await this._pool.query(query);
 
