@@ -6,36 +6,53 @@ const ClientError = require('./exceptions/ClientError');
 const albums = require('./api/album');
 const { AlbumsValidator } = require('./validator/albums');
 const AlbumsService = require('./services/postgres/AlbumsService');
+const path = require('path');
+const config = require('./utils/config');
 
 const songs = require('./api/song');
 const { SongsValidator } = require('./validator/songs');
 const SongsService = require('./services/postgres/SongsService');
 
-/* Users */
+/** Users */
 const users = require('./api/users');
 const { UsersValidator } = require('./validator/users');
 const UsersService = require('./services/postgres/UsersServices');
 
-/* Collaborations */
+/** Collaborations */
 const collaborations = require('./api/collaborations');
 const { CollaborationsService } = require('./services/postgres/CollaborationService');
 const CollaborationsValidator = require('./validator/collaboration');
 
-/* Authentications */
+/** Authentications */
 const authentications = require('./api/authentications');
 const { AuthenticationsService } = require('./services/postgres/AuthenticationsService');
 const TokenJWT = require('./token/jwtToken');
 const AuthenticationsValidator = require('./validator/authentications');
 
-/* Playlists */
+/** Playlists */
 const playlists = require('./api/playlists');
 const { PlaylistsService } = require('./services/postgres/PlaylistsService');
 const PlaylistsValidator = require('./validator/playlists');
 
+/** Exports */
+const _exports = require('./api/exports');
+const ProducerService = require('./services/rabbitmq/ProducerService');
+const ExportsValidator = require('./validator/exports');
+
+/** Uploads */
+const StorageService = require('./services/storage/StorageService');
+const UploadsValidator = require('./validator/uploads');
+
+/** Cache */
+const CacheService = require('./services/redis/CacheService');
+
 const init = async () => {
-  const albumsService = new AlbumsService();
+  const cacheService = new CacheService();
+  const albumsService = new AlbumsService(cacheService);
   const songsService = new SongsService();
   const usersService = new UsersService();
+  const storageService = new StorageService(path.resolve(__dirname, 'api/album/file/covers'));
+
   const collaborationsService = new CollaborationsService();
   const authenticationsService = new AuthenticationsService();
   const playlistsService = new PlaylistsService(collaborationsService);
@@ -104,51 +121,63 @@ const init = async () => {
   });
 
 
-  await server.register([{
-    plugin: albums,
-    options: {
-      service: albumsService,
-      validator: AlbumsValidator,
+  await server.register([
+    {
+      plugin: albums,
+      options: {
+        service: albumsService,
+        validator: AlbumsValidator,
+        storageService,
+        songsService,
+        uploadsValidator: UploadsValidator,
+      },
     },
-  },
-  {
-    plugin: songs,
-    options: {
-      service: songsService,
-      validator: SongsValidator,
+    {
+      plugin: songs,
+      options: {
+        service: songsService,
+        validator: SongsValidator,
+      },
     },
-  },
-  {
-    plugin: users,
-    options: {
-      service: usersService,
-      validator: UsersValidator,
+    {
+      plugin: users,
+      options: {
+        service: usersService,
+        validator: UsersValidator,
+      },
     },
-  },
-  {
-    plugin: collaborations,
-    options: {
-      collaborationsService,
-      playlistsService,
-      validator: CollaborationsValidator,
+    {
+      plugin: collaborations,
+      options: {
+        collaborationsService,
+        playlistsService,
+        validator: CollaborationsValidator,
+      },
     },
-  },
-  {
-    plugin: authentications,
-    options: {
-      usersService,
-      authenticationsService,
-      tokenManager: TokenJWT,
-      validator: AuthenticationsValidator,
+    {
+      plugin: authentications,
+      options: {
+        usersService,
+        authenticationsService,
+        tokenManager: TokenJWT,
+        validator: AuthenticationsValidator,
+      },
     },
-  },
-  {
-    plugin: playlists,
-    options: {
-      service: playlistsService,
-      validator: PlaylistsValidator,
+    {
+      plugin: playlists,
+      options: {
+        service: playlistsService,
+        validator: PlaylistsValidator,
+      },
     },
-  },
+    {
+      plugin: _exports,
+      options: {
+        producerService: ProducerService,
+        exportsValidator: ExportsValidator,
+        playlistsService,
+      },
+    },
   ]);
 
   await server.start();

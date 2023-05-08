@@ -57,6 +57,7 @@ exports.up = pgm => {
             type: 'DATE',
         },
     });
+
 };
 
 exports.down = pgm => {

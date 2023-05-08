@@ -3,6 +3,7 @@ const mapDbAlbumModel = ({
   name,
   year,
   songs,
+  cover_url,
   inserted_at,
   updated_at,
 }) => ({
@@ -10,6 +11,7 @@ const mapDbAlbumModel = ({
   name,
   year,
   songs,
+  coverUrl: cover_url,
   insertedAt: inserted_at,
   updatedAt: updated_at,
 });
